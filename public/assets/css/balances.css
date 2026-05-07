@@ -1,0 +1,208 @@
+.balance-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  margin-bottom: 32px;
+}
+
+.balance-summary-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 24px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  transition:
+    box-shadow var(--transition),
+    transform var(--transition);
+}
+
+.balance-summary-card:hover {
+  /* box-shadow: var(--shadow-md); */
+  /* transform: translateY(-1px); */
+}
+
+.balance-summary-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.balance-summary-card--owed .balance-summary-icon {
+}
+
+.balance-summary-card--owe .balance-summary-icon {
+}
+
+.balance-summary-card--net.positive .balance-summary-icon {
+}
+
+.balance-summary-card--net.negative .balance-summary-icon {
+  color: var(--accent-amber);
+}
+
+.balance-summary-value {
+  font-family: var(--headings);
+  font-size: 1.5rem;
+  font-weight: 700;
+  letter-spacing: -0.04em;
+  line-height: 1;
+  margin-bottom: 4px;
+}
+
+.balance-summary-card--owed .balance-summary-value {
+  color: var(--accent-green);
+}
+.balance-summary-card--owe .balance-summary-value {
+  color: var(--accent-red);
+}
+.balance-summary-card--net.positive .balance-summary-value {
+  color: var(--accent-blue);
+}
+.balance-summary-card--net.negative .balance-summary-value {
+  color: var(--accent-amber);
+}
+
+.balance-summary-label {
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+.balances-layout {
+  display: grid;
+  grid-template-columns: 1fr 300px;
+  gap: 20px;
+  align-items: start;
+}
+
+.balances-section-title {
+  font-family: var(--headings);
+  font-size: 0.85rem;
+  font-weight: 650;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  margin-bottom: 12px;
+}
+
+.balance-person-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 18px 22px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 10px;
+  transition:
+    box-shadow var(--transition),
+    border-color var(--transition);
+}
+
+.balance-person-card:hover {
+  box-shadow: var(--shadow-sm);
+}
+
+.balance-person-card--owed {
+}
+
+.balance-person-card--owe {
+}
+
+.balance-person-avatar {
+  width: 42px;
+  height: 42px;
+  border-radius: var(--radius-full);
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.9rem;
+  font-weight: 700;
+  font-family: var(--headings);
+  color: var(--text-secondary);
+  flex-shrink: 0;
+}
+
+.balance-person-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.balance-person-name {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 3px;
+}
+
+.balance-person-groups {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.balance-person-right {
+  text-align: right;
+  flex-shrink: 0;
+}
+
+.balance-person-amount {
+  font-family: var(--headings);
+  font-size: 1.1rem;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  line-height: 1;
+  margin-bottom: 3px;
+}
+
+.balance-person-amount.owed {
+  color: var(--accent-green);
+}
+.balance-person-amount.owe {
+  color: var(--accent-red);
+}
+
+.balance-person-label {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+}
+
+.balances-sidebar .balance-panel {
+  position: sticky;
+  top: 24px;
+}
+
+@media (max-width: 1000px) {
+  .balances-layout {
+    grid-template-columns: 1fr;
+  }
+  .balances-sidebar .balance-panel {
+    position: static;
+  }
+}
+
+@media (max-width: 640px) {
+  .balance-summary-grid {
+    grid-template-columns: 1fr;
+  }
+  .balance-summary-card {
+    padding: 16px;
+  }
+  .balance-person-card {
+    padding: 14px 16px;
+    gap: 12px;
+  }
+  .balance-person-amount {
+    font-size: 0.95rem;
+  }
+}
