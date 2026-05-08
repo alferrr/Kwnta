@@ -21,7 +21,7 @@ $errorText = $errorMessages[$error] ?? '';
     <div class="container">
 
         <div class="head">
-            <h2>Welcome to Kwnta</h2>
+            <h2>Welcome to kwnta</h2>
             <p>Start your experience with Kwnta by signing in or signing up</p>
         </div>
         
@@ -51,7 +51,7 @@ $errorText = $errorMessages[$error] ?? '';
             <input type="password" placeholder="Password" name="password">
         </div>
 
-        <button class="login-btn" type="submit">Login</button>
+        <button class="login-btn" type="submit">Register</button>
     </div>
 </form>
 <aside>
