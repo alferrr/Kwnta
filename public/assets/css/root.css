@@ -130,3 +130,9 @@ img {
   white-space: nowrap;
   border-width: 0;
 }
+
+@media screen and (max-width: 767px) {
+  input {
+    font-size: 16px !important;
+  }
+}
