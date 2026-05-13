@@ -1,4 +1,5 @@
 <?php
+// public/group.php
 require_once __DIR__ . '/../src/middleware/AuthMiddleware.php';
 AuthMiddleware::handle();
 
@@ -20,6 +21,16 @@ $expenses = ExpenseService::getExpensesByGroup($conn, $groupId);
 $balances = ExpenseService::getBalances($conn, $groupId, $userId);
 $members  = GroupService::getMembersWithRole($conn, $groupId);
 $isAdmin  = GroupService::isAdmin($conn, $groupId, $userId);
+
+// All users not already in this group
+$stmt = $conn->prepare("
+    SELECT id, COALESCE(firstname,'') AS firstname, COALESCE(lastname,'') AS lastname, email
+    FROM users
+    WHERE id NOT IN (SELECT user_id FROM group_members WHERE group_id = ?)
+    ORDER BY firstname, lastname
+");
+$stmt->execute([$groupId]);
+$availableUsers = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 if (!$group) {
     header('Location: /groups.php');
@@ -66,7 +77,6 @@ ob_start();
             <div class="card">
                 <div class="card-body">
                     <div class="empty-state">
-                        <div class="empty-icon">🧾</div>
                         <div class="empty-title">No expenses yet</div>
                         <div class="empty-desc">Add the first expense to start tracking</div>
                     </div>
@@ -93,7 +103,6 @@ ob_start();
                 $allPaid = count($splits) > 0 && array_sum(array_column($splits, 'paid')) === count($splits);
                 ?>
             <div class="expense-item expense-item--expandable">
-                <!-- <div class="expense-icon"><?= $icon ?></div> -->
                 <div class="expense-info">
                     <div class="expense-desc"><?= htmlspecialchars($e['description']) ?></div>
                     <div class="expense-meta">
@@ -197,7 +206,7 @@ ob_start();
                         <div class="member-info">
                             <div class="member-name"><?= htmlspecialchars($m['firstname'] . ' ' . $m['lastname']) ?></div>
                             <div class="member-role-badge <?= $m['role'] === 'admin' ? 'member-role-badge--admin' : '' ?>">
-                                <?= $m['role'] === 'admin' ? '⭐ Admin' : 'Member' ?>
+                                <?= $m['role'] === 'admin' ? 'Admin' : 'Member' ?>
                             </div>
                         </div>
                         <?php if ($isYou): ?>
@@ -283,25 +292,66 @@ ob_start();
 
 <!-- Add Member Modal -->
 <div class="modal-overlay" id="add-member-modal">
-    <div class="modal">
+    <div class="modal" style="max-width:500px;">
         <div class="modal-header">
             <span class="modal-title">Add Member</span>
             <button class="modal-close" onclick="closeModal('add-member-modal')">✕</button>
         </div>
         <div class="modal-body">
-            <form action="/public/handlers/group-handler.php" method="POST">
-                <input type="hidden" name="action" value="add_member">
-                <input type="hidden" name="group_id" value="<?= $groupId ?>">
-                <div class="form-group">
-                    <label class="form-label">Member Email</label>
-                    <input type="email" name="email" class="form-input" placeholder="Enter email address" required>
-                    <div class="form-hint">The person must already have a kwnta account</div>
+
+            <!-- Search input -->
+            <div class="form-group" style="margin-bottom:14px;">
+                <div style="position:relative;">
+                    <span class="material-symbols-outlined" style="position:absolute; left:10px; top:50%; transform:translateY(-50%); font-size:17px; color:var(--text-muted); pointer-events:none;">search</span>
+                    <input type="text" id="member-search" class="form-input"
+                           placeholder="Search by name or email…"
+                           style="padding-left:34px;"
+                           oninput="filterUsers(this.value)"
+                           autocomplete="off">
                 </div>
-                <div class="form-footer">
-                    <button type="button" class="btn btn-secondary" onclick="closeModal('add-member-modal')">Cancel</button>
-                    <button type="submit" class="btn btn-primary">Add Member</button>
+            </div>
+
+            <?php if (empty($availableUsers)): ?>
+            <div style="text-align:center; padding:24px 0; font-size:0.82rem; color:var(--text-muted);">
+                All registered users are already in this group.
+            </div>
+            <?php else: ?>
+
+            <!-- User list -->
+            <div id="user-list" style="max-height:300px; overflow-y:auto; border:1px solid var(--border); border-radius:var(--radius-md);">
+                <?php foreach ($availableUsers as $u):
+                    $uInitials = strtoupper(substr($u['firstname'], 0, 1) . substr($u['lastname'], 0, 1));
+                    $uName     = trim($u['firstname'] . ' ' . $u['lastname']);
+                    ?>
+                <div class="user-search-row"
+                     data-name="<?= strtolower(htmlspecialchars($uName)) ?>"
+                     data-email="<?= strtolower(htmlspecialchars($u['email'])) ?>">
+                    <div class="user-search-avatar"><?= $uInitials ?: '?' ?></div>
+                    <div class="user-search-info">
+                        <div class="user-search-name"><?= htmlspecialchars($uName) ?: 'No name' ?></div>
+                        <div class="user-search-email"><?= htmlspecialchars($u['email']) ?></div>
+                    </div>
+                    <form action="/handlers/group-handler.php" method="POST" style="flex-shrink:0;">
+                        <input type="hidden" name="action" value="add_member">
+                        <input type="hidden" name="group_id" value="<?= $groupId ?>">
+                        <input type="hidden" name="email" value="<?= htmlspecialchars($u['email']) ?>">
+                        <button type="submit" class="btn btn-primary btn-sm">Add</button>
+                    </form>
                 </div>
-            </form>
+                <?php endforeach; ?>
+                <div id="user-list-empty" style="display:none; text-align:center; padding:20px; font-size:0.82rem; color:var(--text-muted);">
+                    No users found matching your search.
+                </div>
+            </div>
+
+            <?php endif; ?>
+
+            <div style="margin-top:16px; padding-top:16px; border-top:1px solid var(--border);">
+                <div style="font-size:0.75rem; color:var(--text-muted);">
+                    Only registered kwnta users can be added to groups.
+                </div>
+            </div>
+
         </div>
     </div>
 </div>
@@ -337,9 +387,37 @@ function toggleSplits(id) {
     if (!el) return;
     const isHidden = el.style.display === 'none';
     el.style.display = isHidden ? 'block' : 'none';
-    // rotate the chevron button
     const btn = el.previousElementSibling?.querySelector('.icon-btn[onclick]');
     if (btn) btn.style.transform = isHidden ? 'rotate(180deg)' : '';
+}
+
+function filterUsers(query) {
+    const q = query.toLowerCase().trim();
+    const rows = document.querySelectorAll('.user-search-row');
+    let visible = 0;
+    rows.forEach(row => {
+        const name  = row.dataset.name  || '';
+        const email = row.dataset.email || '';
+        const match = !q || name.includes(q) || email.includes(q);
+        row.style.display = match ? '' : 'none';
+        if (match) visible++;
+    });
+    const empty = document.getElementById('user-list-empty');
+    if (empty) empty.style.display = visible === 0 ? 'block' : 'none';
+}
+
+// Clear search only when modal is freshly opened
+const addMemberModal = document.getElementById('add-member-modal');
+if (addMemberModal) {
+    const observer = new MutationObserver(mutations => {
+        mutations.forEach(m => {
+            if (m.attributeName === 'class' && addMemberModal.classList.contains('open')) {
+                const input = document.getElementById('member-search');
+                if (input) { input.value = ''; filterUsers(''); }
+            }
+        });
+    });
+    observer.observe(addMemberModal, { attributes: true });
 }
 </script>
 
