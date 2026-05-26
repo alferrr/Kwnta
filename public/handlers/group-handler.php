@@ -2,11 +2,11 @@
 
 session_start();
 
-require_once __DIR__ . '/../../src/middleware/AuthMiddleware.php';
+require_once __DIR__ . '/../../../src/middleware/AuthMiddleware.php';
 AuthMiddleware::handle();
 
-require_once __DIR__ . '/../../config/db.php';
-require_once __DIR__ . '/../../src/services/GroupService.php';
+require_once __DIR__ . '/../../../config/db.php';
+require_once __DIR__ . '/../../../src/services/GroupService.php';
 
 $user   = $_SESSION['user'];
 $userId = $user['id'];
@@ -43,7 +43,7 @@ switch ($action) {
         if ($result['success']) {
             header('Location: /groups.php?status=archived');
         } else {
-            header('Location: /groups.php?error=' . urlencode($result['message']));
+            header('Location: /groups.php?error=something_went_wrong');
         }
         exit();
 
@@ -53,7 +53,7 @@ switch ($action) {
         if ($result['success']) {
             header('Location: /groups.php?status=restored');
         } else {
-            header('Location: /groups.php?error=' . urlencode($result['message']));
+            header('Location: /groups.php?error=something_went_wrong');
         }
         exit();
 
@@ -64,7 +64,7 @@ switch ($action) {
         if ($result['success']) {
             header('Location: /groups.php?status=leave_requested');
         } else {
-            header('Location: /groups.php?error=' . urlencode($result['message']));
+            header('Location: /groups.php?error=something_went_wrong');
         }
         exit();
 
@@ -85,7 +85,7 @@ switch ($action) {
         if ($result['success']) {
             header('Location: /groups.php?status=leave_' . $result['status']);
         } else {
-            header('Location: /groups.php?error=' . urlencode($result['message']));
+            header('Location: /groups.php?error=something_went_wrong');
         }
         exit();
 

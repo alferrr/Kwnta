@@ -1,4 +1,5 @@
 <?php
+// public/groups.php
 require_once __DIR__ . '/../src/middleware/AuthMiddleware.php';
 AuthMiddleware::handle();
 
@@ -27,6 +28,12 @@ ob_start();
         </p>
     </div>
     <div class="page-actions">
+        <div style="position:relative;">
+            <span class="material-symbols-outlined" style="position:absolute; left:9px; top:50%; transform:translateY(-50%); font-size:16px; color:var(--text-muted); pointer-events:none;">search</span>
+            <input type="text" id="group-search" class="form-input" placeholder="Search groups…"
+                   style="padding-left:32px; padding-top:7px; padding-bottom:7px; width:180px; font-size:0.82rem;"
+                   oninput="filterGroups(this.value)">
+        </div>
         <button class="btn btn-primary" onclick="openModal('create-group-modal')">
             <span class="material-symbols-outlined icon-sm">add</span>
             New Group
@@ -84,12 +91,12 @@ ob_start();
             $menuId   = 'menu-' . $g['id'];
             ?>
         <!-- Wrapper is position:relative so dropdown can escape the card -->
-        <div class="group-card-wrapper">
+        <div class="group-card-wrapper" data-name="<?= strtolower(htmlspecialchars($g['name'])) ?>">
 
             <!-- The card is just a link — no interactive children inside -->
-            <a href="group.php?id=<?= $g['id'] ?>" class="group-card" style="">
+            <a href="group.php?id=<?= $g['id'] ?>" class="group-card" style="--card-accent:<?= $accent ?>;">
                 <div class="group-card-top">
-                    <div class="group-card-icon" style="">
+                    <div class="group-card-icon" style="background:<?= $accent ?>;">
                         <span class="material-symbols-outlined icon-md"><?= htmlspecialchars($iconName) ?></span>
                     </div>
                     <!-- Spacer so name doesn't bleed under the menu button -->
@@ -381,6 +388,31 @@ function toggleGroupMenu(e, id) {
     const isOpen = target.classList.contains('open');
     document.querySelectorAll('.group-dropdown.open').forEach(d => d.classList.remove('open'));
     if (!isOpen) target.classList.add('open');
+}
+
+function filterGroups(query) {
+    const q = query.toLowerCase().trim();
+    let visible = 0;
+    document.querySelectorAll('.groups-grid .group-card-wrapper').forEach(card => {
+        const name = card.dataset.name || '';
+        const match = !q || name.includes(q);
+        card.style.display = match ? '' : 'none';
+        if (match) visible++;
+    });
+    const grid = document.querySelector('.groups-grid');
+    let noResult = document.getElementById('groups-no-result');
+    if (visible === 0 && grid) {
+        if (!noResult) {
+            noResult = document.createElement('div');
+            noResult.id = 'groups-no-result';
+            noResult.style.cssText = 'padding:40px; text-align:center; font-size:0.85rem; color:var(--text-muted); grid-column:1/-1;';
+            noResult.textContent = 'No groups match your search.';
+            grid.appendChild(noResult);
+        }
+        noResult.style.display = '';
+    } else if (noResult) {
+        noResult.style.display = 'none';
+    }
 }
 
 document.addEventListener('click', () => {

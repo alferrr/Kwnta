@@ -1,11 +1,10 @@
-    <?php
-    require_once __DIR__ . '/../src/middleware/AuthMiddleware.php';
+<?php
+require_once __DIR__ . '/../src/middleware/AuthMiddleware.php';
 AuthMiddleware::handle();
 
 require_once __DIR__ . '/../config/db.php';
 require_once __DIR__ . '/../src/services/GroupService.php';
 require_once __DIR__ . '/../src/services/ExpenseService.php';
-
 $user = $_SESSION['user'];
 $userId = $user['id'];
 

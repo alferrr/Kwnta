@@ -19,6 +19,12 @@ $totalExpenses = count($expenses);
 $totalSpent    = array_sum(array_column($expenses, 'amount'));
 
 $activeTab = $_GET['tab'] ?? 'profile';
+$errorMessages = [
+    'something_went_wrong'  => 'Something went wrong. Please try again.',
+    'fields_required'       => 'Please fill in all required fields.',
+    'passwords_mismatch'    => 'Passwords do not match.',
+    'invalid'               => 'Invalid request.',
+];
 $success   = $_GET['success'] ?? '';
 $error     = $_GET['error'] ?? '';
 
@@ -28,8 +34,9 @@ $initials  = strtoupper(
 );
 
 $successMessages = [
-    'profile_updated' => 'Your profile has been updated.',
-    'password_changed' => 'Password changed successfully.',
+    'profile_updated'   => 'Your profile has been updated.',
+    'password_changed'  => 'Password changed successfully.',
+    'account_recovered' => 'Your account has been successfully recovered.',
 ];
 
 $pageTitle   = 'Settings';
@@ -82,7 +89,7 @@ ob_start();
             <?php if ($error): ?>
             <div class="alert alert-error">
                 <span class="material-symbols-outlined">error</span>
-                <?= htmlspecialchars(urldecode($error)) ?>
+                <?= htmlspecialchars($errorMessages[urldecode($error)] ?? 'Something went wrong. Please try again.') ?>
             </div>
             <?php endif; ?>
 
@@ -272,8 +279,9 @@ ob_start();
                     </div>
                     <div class="settings-section-body">
                         <p style="font-size:0.855rem; color:var(--text-secondary); margin-bottom:16px; line-height:1.6;">
-                            This will permanently delete your account, all your groups, expenses, and split records.
-                            <strong>This action cannot be undone.</strong>
+                            Your account will be <strong>scheduled for deletion</strong> and permanently removed after
+                            <strong>30 days</strong>. You can recover your account within that window by logging back in.
+                            After 30 days, all your groups, expenses, and data will be permanently deleted.
                         </p>
 
                         <div style="background:var(--accent-red-light); border:1px solid #fecaca; border-radius:var(--radius-md); padding:12px 16px; margin-bottom:20px;">

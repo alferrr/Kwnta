@@ -17,7 +17,17 @@ class AuthController
         $user = AuthService::login($conn, $email, $password);
 
         if ($user) {
-            $_SESSION["user"] = $user;
+            // Block if past the 30day recovery window
+            if (!empty($user['deleted_at'])) {
+                $deletedAt = strtotime($user['deleted_at']);
+                if (time() > $deletedAt + (30 * 86400)) {
+                    header("Location: /index.php?error=account_deleted");
+                    exit();
+                }
+            }
+
+            session_start();
+            $_SESSION['user'] = $user;
             header("Location: /dashboard.php");
             exit();
         }

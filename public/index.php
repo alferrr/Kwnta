@@ -13,6 +13,7 @@ $errorText = $errorMessages[$error] ?? '';
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <link rel="stylesheet" href="./assets/css/login.css">
     <link rel="shortcut icon" href="./assets/images/logo.png" type="image/x-icon">
+    <meta name="description" content="A web app for tracking shared group expenses — log what was spent, split it equally, and always know who owes who.">
     <title>Kwnta</title>
 </head>
 <body>

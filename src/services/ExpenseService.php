@@ -1,6 +1,5 @@
 <?php
 
-
 class ExpenseService
 {
     public static function getExpensesByGroup(PDO $conn, int $groupId): array
@@ -248,4 +247,102 @@ class ExpenseService
         usort($allBalances, fn ($a, $b) => $b['amount'] <=> $a['amount']);
         return array_values($allBalances);
     }
+
+    public static function getExpensesByGroupPaginated(PDO $conn, int $groupId, int $page = 1, int $perPage = 10, string $search = ''): array
+    {
+        $offset = ($page - 1) * $perPage;
+        $search = '%' . $search . '%';
+        $stmt = $conn->prepare("
+            SELECT e.*,
+                   CONCAT(COALESCE(u.firstname, ''), ' ', COALESCE(u.lastname, '')) AS paid_by_name,
+                   COUNT(es.user_id) AS split_count,
+                   SUM(es.paid) AS paid_count
+            FROM expenses e
+            JOIN users u ON u.id = e.paid_by
+            LEFT JOIN expense_splits es ON es.expense_id = e.id
+            WHERE e.group_id = ? AND e.description LIKE ?
+            GROUP BY e.id
+            ORDER BY e.created_at DESC
+            LIMIT {$perPage} OFFSET {$offset}
+        ");
+        $stmt->execute([$groupId, $search]);
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    public static function countExpensesByGroup(PDO $conn, int $groupId, string $search = ''): int
+    {
+        $search = '%' . $search . '%';
+        $stmt = $conn->prepare("
+            SELECT COUNT(*) FROM expenses WHERE group_id = ? AND description LIKE ?
+        ");
+        $stmt->execute([$groupId, $search]);
+        return (int)$stmt->fetchColumn();
+    }
+
+    public static function getAllExpensesByUserPaginated(PDO $conn, int $userId, int $page = 1, int $perPage = 10, string $search = '', int $filterGroup = 0): array
+    {
+        $offset = ($page - 1) * $perPage;
+        $searchParam = '%' . $search . '%';
+        $groupFilter = $filterGroup ? 'AND e.group_id = ' . (int)$filterGroup : '';
+        $stmt = $conn->prepare("
+            SELECT e.*,
+                   CONCAT(COALESCE(u.firstname, ''), ' ', COALESCE(u.lastname, '')) AS paid_by_name,
+                   g.name AS group_name,
+                   g.id AS group_id,
+                   COUNT(es.user_id) AS split_count,
+                   SUM(es.paid) AS paid_count
+            FROM expenses e
+            JOIN users u ON u.id = e.paid_by
+            JOIN `groups` g ON g.id = e.group_id
+            LEFT JOIN expense_splits es ON es.expense_id = e.id
+            WHERE e.group_id IN (
+                SELECT group_id FROM group_members WHERE user_id = ?
+            )
+            AND e.description LIKE ?
+            {$groupFilter}
+            GROUP BY e.id
+            ORDER BY e.created_at DESC
+            LIMIT {$perPage} OFFSET {$offset}
+        ");
+        $stmt->execute([$userId, $searchParam]);
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    public static function countAllExpensesByUser(PDO $conn, int $userId, string $search = '', int $filterGroup = 0): int
+    {
+        $searchParam = '%' . $search . '%';
+        $groupFilter = $filterGroup ? 'AND e.group_id = ' . (int)$filterGroup : '';
+        $stmt = $conn->prepare("
+            SELECT COUNT(DISTINCT e.id)
+            FROM expenses e
+            WHERE e.group_id IN (
+                SELECT group_id FROM group_members WHERE user_id = ?
+            )
+            AND e.description LIKE ?
+            {$groupFilter}
+        ");
+        $stmt->execute([$userId, $searchParam]);
+        return (int)$stmt->fetchColumn();
+    }
+
+    public static function getExpenseById(PDO $conn, int $expenseId): ?array
+    {
+        $stmt = $conn->prepare("
+            SELECT e.*,
+                   CONCAT(COALESCE(u.firstname, ''), ' ', COALESCE(u.lastname, '')) AS paid_by_name,
+                   g.name AS group_name,
+                   COUNT(es.user_id) AS split_count,
+                   SUM(es.paid) AS paid_count
+            FROM expenses e
+            JOIN users u ON u.id = e.paid_by
+            JOIN `groups` g ON g.id = e.group_id
+            LEFT JOIN expense_splits es ON es.expense_id = e.id
+            WHERE e.id = ?
+            GROUP BY e.id
+        ");
+        $stmt->execute([$expenseId]);
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+        return $row ?: null;
+    }
+
 }

@@ -2,11 +2,11 @@
 
 session_start();
 
-require_once __DIR__ . '/../../../src/middleware/AuthMiddleware.php';
+require_once __DIR__ . '/../../src/middleware/AuthMiddleware.php';
 AuthMiddleware::handle();
 
-require_once __DIR__ . '/../../../config/db.php';
-require_once __DIR__ . '/../../../src/services/UserService.php';
+require_once __DIR__ . '/../../config/db.php';
+require_once __DIR__ . '/../../src/services/UserService.php';
 
 $user   = $_SESSION['user'];
 $userId = $user['id'];
@@ -32,7 +32,7 @@ switch ($action) {
             $_SESSION['user'] = array_merge($_SESSION['user'], $updated);
             header('Location: /settings.php?success=profile_updated');
         } else {
-            header('Location: /settings.php?error=' . urlencode($result['message']));
+            header('Location: /settings.php?error=something_went_wrong');
         }
         exit();
 
@@ -51,7 +51,7 @@ switch ($action) {
         if ($result['success']) {
             header('Location: /settings.php?tab=security&success=password_changed');
         } else {
-            header('Location: /settings.php?tab=security&error=' . urlencode($result['message']));
+            header('Location: /settings.php?tab=security&error=something_went_wrong');
         }
         exit();
 
@@ -60,10 +60,11 @@ switch ($action) {
         $result   = UserService::deleteAccount($conn, $userId, $password);
 
         if ($result['success']) {
-            session_destroy();
-            header('Location: /index.php?deleted=1');
+            // Don't destroy session — store deleted_at so middleware can redirect to recovery page
+            $_SESSION['user']['deleted_at'] = date('Y-m-d H:i:s');
+            header('Location: /account-recovery.php');
         } else {
-            header('Location: /settings.php?tab=danger&error=' . urlencode($result['message']));
+            header('Location: /settings.php?tab=danger&error=something_went_wrong');
         }
         exit();
 

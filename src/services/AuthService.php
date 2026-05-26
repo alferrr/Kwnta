@@ -6,7 +6,7 @@ class AuthService
 {
     public static function login($conn, $email, $password)
     {
-        $stmt = $conn->prepare("SELECT * FROM users where email=?");
+        $stmt = $conn->prepare("SELECT * FROM users WHERE email=?");
         $stmt -> execute([$email]);
 
         $user = $stmt->fetch(PDO::FETCH_ASSOC);

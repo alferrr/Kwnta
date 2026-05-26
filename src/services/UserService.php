@@ -1,12 +1,10 @@
 <?php
 
-// src/services/UserService.php
-
 class UserService
 {
     public static function getById(PDO $conn, int $userId): ?array
     {
-        $stmt = $conn->prepare("SELECT id, firstname, lastname, email, created_at FROM users WHERE id = ?");
+        $stmt = $conn->prepare("SELECT id, firstname, lastname, email, created_at, deleted_at FROM users WHERE id = ?");
         $stmt->execute([$userId]);
         $row = $stmt->fetch(PDO::FETCH_ASSOC);
         return $row ?: null;
@@ -61,7 +59,53 @@ class UserService
             return ['success' => false, 'message' => 'Incorrect password. Account not deleted.'];
         }
 
-        $conn->prepare("DELETE FROM users WHERE id = ?")->execute([$userId]);
+        $conn->prepare("UPDATE users SET deleted_at = NOW() WHERE id = ?")->execute([$userId]);
         return ['success' => true];
     }
+
+    public static function isInRecovery(array $user): bool
+    {
+        if (empty($user['deleted_at'])) {
+            return false;
+        }
+        $deletedAt = strtotime($user['deleted_at']);
+        $daysLeft  = ceil(($deletedAt + (30 * 86400) - time()) / 86400);
+        return $daysLeft > 0;
+    }
+
+    public static function daysUntilPermanentDelete(array $user): int
+    {
+        if (empty($user['deleted_at'])) {
+            return 0;
+        }
+        $deletedAt = strtotime($user['deleted_at']);
+        return max(0, (int)ceil(($deletedAt + (30 * 86400) - time()) / 86400));
+    }
+
+    public static function recoverAccount(PDO $conn, int $userId): bool
+    {
+        $stmt = $conn->prepare("UPDATE users SET deleted_at = NULL WHERE id = ?");
+        return $stmt->execute([$userId]);
+    }
+
+    public static function purgeExpiredAccounts(PDO $conn): int
+    {
+        $stmt = $conn->prepare("
+            SELECT id FROM users
+            WHERE deleted_at IS NOT NULL
+            AND deleted_at < NOW() - INTERVAL 30 DAY
+        ");
+        $stmt->execute();
+        $expired = $stmt->fetchAll(PDO::FETCH_COLUMN);
+
+        if (empty($expired)) {
+            return 0;
+        }
+
+        foreach ($expired as $id) {
+            $conn->prepare("DELETE FROM users WHERE id = ?")->execute([$id]);
+        }
+        return count($expired);
+    }
+
 }

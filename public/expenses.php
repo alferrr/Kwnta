@@ -9,24 +9,25 @@ require_once __DIR__ . '/../src/services/GroupService.php';
 
 $user     = $_SESSION['user'];
 $userId   = $user['id'];
-$expenses = ExpenseService::getAllExpensesByUser($conn, $userId);
-$groups   = GroupService::getGroupsByUser($conn, $userId);
-
-// Filter by group if requested
+$groups      = GroupService::getGroupsByUser($conn, $userId);
 $filterGroup = (int)($_GET['group'] ?? 0);
-if ($filterGroup) {
-    $expenses = array_filter($expenses, fn ($e) => (int)$e['group_id'] === $filterGroup);
-    $expenses = array_values($expenses);
-}
+$search      = trim($_GET['search'] ?? '');
+$perPage     = 10;
+$page        = max(1, (int)($_GET['page'] ?? 1));
+$totalCount  = ExpenseService::countAllExpensesByUser($conn, $userId, $search, $filterGroup);
+$totalPages  = max(1, (int)ceil($totalCount / $perPage));
+$page        = min($page, $totalPages);
+$expenses    = ExpenseService::getAllExpensesByUserPaginated($conn, $userId, $page, $perPage, $search, $filterGroup);
 
-// Group expenses by date
 $grouped = [];
 foreach ($expenses as $e) {
     $day = date('Y-m-d', strtotime($e['created_at']));
     $grouped[$day][] = $e;
 }
 
-$totalAmount = array_sum(array_column($expenses, 'amount'));
+$totalAmount = ExpenseService::countAllExpensesByUser($conn, $userId) > 0
+    ? (float)$conn->query("SELECT COALESCE(SUM(e.amount),0) FROM expenses e WHERE e.group_id IN (SELECT group_id FROM group_members WHERE user_id = {$userId})")->fetchColumn()
+    : 0;
 
 $pageTitle   = 'Expenses';
 $currentPage = 'expenses';
@@ -38,21 +39,33 @@ ob_start();
 <div class="page-header">
     <div>
         <h1 class="page-title">Expenses</h1>
-        <p class="page-subtitle"><?= count($expenses) ?> expense<?= count($expenses) !== 1 ? 's' : '' ?> · ₱<?= number_format($totalAmount, 2) ?> total</p>
+        <p class="page-subtitle"><?= $totalCount ?> expense<?= $totalCount !== 1 ? 's' : '' ?> · ₱<?= number_format($totalAmount, 2) ?> total</p>
     </div>
     <div class="page-actions">
-        <!-- Group filter -->
-        <div class="filter-select-wrap">
-            <span class="material-symbols-outlined icon-sm" style="color:var(--text-muted);">filter_list</span>
-            <select class="filter-select" onchange="window.location.href='/expenses.php' + (this.value ? '?group=' + this.value : '')">
-                <option value="">All Groups</option>
-                <?php foreach ($groups as $g): ?>
-                <option value="<?= $g['id'] ?>" <?= $filterGroup === (int)$g['id'] ? 'selected' : '' ?>>
-                    <?= htmlspecialchars($g['name']) ?>
-                </option>
-                <?php endforeach; ?>
-            </select>
-        </div>
+        <form method="GET" action="/expenses.php" style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+            <!-- Search -->
+            <div style="position:relative;">
+                <span class="material-symbols-outlined" style="position:absolute; left:9px; top:50%; transform:translateY(-50%); font-size:16px; color:var(--text-muted); pointer-events:none;">search</span>
+                <input type="text" name="search" value="<?= htmlspecialchars($search) ?>"
+                       placeholder="Search expenses…" class="form-input"
+                       style="padding-left:32px; padding-top:7px; padding-bottom:7px; width:180px; font-size:0.82rem;">
+            </div>
+            <!-- Group filter -->
+            <div class="filter-select-wrap">
+                <span class="material-symbols-outlined icon-sm" style="color:var(--text-muted);">filter_list</span>
+                <select class="filter-select" name="group" onchange="this.form.submit()">
+                    <option value="">All Groups</option>
+                    <?php foreach ($groups as $g): ?>
+                    <option value="<?= $g['id'] ?>" <?= $filterGroup === (int)$g['id'] ? 'selected' : '' ?>>
+                        <?= htmlspecialchars($g['name']) ?>
+                    </option>
+                    <?php endforeach; ?>
+                </select>
+            </div>
+            <?php if ($search || $filterGroup): ?>
+            <a href="/expenses.php" class="btn btn-secondary btn-sm">Clear</a>
+            <?php endif; ?>
+        </form>
     </div>
 </div>
 
@@ -169,6 +182,26 @@ ob_start();
         <?php endforeach; ?>
         <?php endforeach; ?>
     </div>
+
+    <?php if ($totalPages > 1): ?>
+    <div class="pagination" style="margin-top:20px;">
+        <?php if ($page > 1): ?>
+        <a href="expenses.php?page=<?= $page - 1 ?>&search=<?= urlencode($search) ?>&group=<?= $filterGroup ?>" class="pagination-btn">
+            <span class="material-symbols-outlined" style="font-size:16px;">chevron_left</span>
+        </a>
+        <?php endif; ?>
+        <?php for ($p = max(1, $page - 2); $p <= min($totalPages, $page + 2); $p++): ?>
+        <a href="expenses.php?page=<?= $p ?>&search=<?= urlencode($search) ?>&group=<?= $filterGroup ?>"
+           class="pagination-btn <?= $p === $page ? 'active' : '' ?>"><?= $p ?></a>
+        <?php endfor; ?>
+        <?php if ($page < $totalPages): ?>
+        <a href="expenses.php?page=<?= $page + 1 ?>&search=<?= urlencode($search) ?>&group=<?= $filterGroup ?>" class="pagination-btn">
+            <span class="material-symbols-outlined" style="font-size:16px;">chevron_right</span>
+        </a>
+        <?php endif; ?>
+        <span class="pagination-info"><?= (($page - 1) * $perPage) + 1 ?>–<?= min($page * $perPage, $totalCount) ?> of <?= $totalCount ?></span>
+    </div>
+    <?php endif; ?>
 
     <?php endif; ?>
 </div>

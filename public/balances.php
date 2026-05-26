@@ -1,4 +1,5 @@
 <?php
+// public/balances.php
 require_once __DIR__ . '/../src/middleware/AuthMiddleware.php';
 AuthMiddleware::handle();
 
@@ -39,6 +40,14 @@ ob_start();
         <h1 class="page-title">Balances</h1>
         <p class="page-subtitle">Your net position across all groups</p>
     </div>
+    <div class="page-actions">
+        <div style="position:relative;">
+            <span class="material-symbols-outlined" style="position:absolute; left:9px; top:50%; transform:translateY(-50%); font-size:16px; color:var(--text-muted); pointer-events:none;">search</span>
+            <input type="text" id="balance-search" class="form-input" placeholder="Search by name…"
+                   style="padding-left:32px; padding-top:7px; padding-bottom:7px; width:180px; font-size:0.82rem;"
+                   oninput="filterBalances(this.value)">
+        </div>
+    </div>
 </div>
 
 <div class="page-body">
@@ -47,7 +56,7 @@ ob_start();
     <div class="balance-summary-grid">
         <div class="balance-summary-card balance-summary-card--owed">
             <div class="balance-summary-icon">
-                <span class="material-symbols-outlined">credit_card_clock</span>
+                <span class="material-symbols-outlined icon-lg">arrow_downward</span>
             </div>
             <div>
                 <div class="balance-summary-value">₱<?= number_format($totalOwed, 2) ?></div>
@@ -57,7 +66,7 @@ ob_start();
 
         <div class="balance-summary-card balance-summary-card--net <?= $net >= 0 ? 'positive' : 'negative' ?>">
             <div class="balance-summary-icon">
-                <span class="material-symbols-outlined icon-lg">account_balance </span>
+                <span class="material-symbols-outlined icon-lg">balance</span>
             </div>
             <div>
                 <div class="balance-summary-value">
@@ -98,7 +107,7 @@ ob_start();
                 $absAmt  = abs($b['amount']);
                 $initials = strtoupper(substr($b['name'], 0, 1));
                 ?>
-            <div class="balance-person-card <?= $isOwe ? 'balance-person-card--owe' : 'balance-person-card--owed' ?>">
+            <div class="balance-person-card" data-name="<?= strtolower(htmlspecialchars($b['name'])) ?>" <?= $isOwe ? 'balance-person-card--owe' : 'balance-person-card--owed' ?>">
                 <div class="balance-person-avatar"><?= $initials ?></div>
                 <div class="balance-person-info">
                     <div class="balance-person-name"><?= htmlspecialchars($b['name']) ?></div>
@@ -177,3 +186,12 @@ ob_start();
 $content = ob_get_clean();
 include __DIR__ . '/../src/views/layout.php';
 ?>
+<script>
+function filterBalances(query) {
+    const q = query.toLowerCase().trim();
+    document.querySelectorAll('.balance-person-card').forEach(card => {
+        const name = card.dataset.name || '';
+        card.style.display = (!q || name.includes(q)) ? '' : 'none';
+    });
+}
+</script>
