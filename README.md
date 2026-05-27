@@ -27,8 +27,13 @@ Made as a web development project demonstrating CRUD operations. Available at [k
 - Balance calculation — who owes who and how much, per group and across all groups
 - Leave request workflow — members request to leave, admins approve or reject
 - Group archiving — hide groups without deleting any data
-- Paginated expense lists with search by description
+- Paginated expense lists (10 per page) with SQL LIMIT/OFFSET
+- Search on expenses, groups, and balances pages
+- Expense detail modal with full split breakdown
+- Add member modal with live user search
 - Account soft delete with a 30-day recovery window
+- Full-screen account recovery page
+- Generic error page — no stack traces shown to users
 - Fully responsive UI, no CSS framework
 
 ---
@@ -45,12 +50,13 @@ kwnta/
 │   ├── index.php                 # Login
 │   ├── register.php              # Register
 │   ├── dashboard.php             # Overview
-│   ├── groups.php                # Groups list
-│   ├── group.php                 # Group detail + expenses
-│   ├── expenses.php              # All expenses across groups
-│   ├── balances.php              # Net balances across groups
+│   ├── groups.php                # Groups list with search
+│   ├── group.php                 # Group detail, paginated expenses, search
+│   ├── expenses.php              # All expenses across groups with search
+│   ├── balances.php              # Net balances with search
 │   ├── settings.php              # Profile, security, account
 │   ├── account-recovery.php      # 30-day deletion recovery screen
+│   ├── error.php                 # Generic error page
 │   ├── assets/
 │   │   └── css/
 │   │       ├── root.css          # Design tokens + resets
@@ -80,7 +86,7 @@ kwnta/
     ├── services/
     │   ├── AuthService.php       # DB-level auth queries
     │   ├── GroupService.php      # Groups, members, leave requests, archive
-    │   ├── ExpenseService.php    # Expenses, splits, balances, pagination
+    │   ├── ExpenseService.php    # Expenses, splits, balances, pagination, search
     │   └── UserService.php       # Profile, password, soft delete, recovery
     └── views/
         ├── layout.php            # Shell template
@@ -150,6 +156,18 @@ mysql -u root -p kwnta < config/schema.sql
 
 ```php
 <?php
+
+set_exception_handler(function (Throwable $e) {
+    http_response_code(500);
+    error_log($e->getMessage() . ' in ' . $e->getFile() . ':' . $e->getLine());
+    include __DIR__ . '/../public/error.php';
+    exit();
+});
+
+set_error_handler(function ($severity, $message, $file, $line) {
+    throw new ErrorException($message, 0, $severity, $file, $line);
+});
+
 $host   = 'localhost';
 $dbname = 'kwnta';
 $user   = 'root';
@@ -163,8 +181,9 @@ try {
     );
     $conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 } catch (PDOException $e) {
-    http_response_code(500);
-    exit('Database connection failed.');
+    error_log('DB connection failed: ' . $e->getMessage());
+    include __DIR__ . '/../public/error.php';
+    exit();
 }
 ```
 
@@ -202,13 +221,13 @@ Register an account to get started.
 
 ## Account Deletion
 
-Deleting an account does not immediately remove the data. Instead:
+Deleting an account does not immediately remove data. Instead:
 
 1. `deleted_at` is set to the current timestamp
-2. The user is redirected to the `account-recovery.php` screen
-3. On every subsequent login, `AuthMiddleware` detects the pending deletion and forces the recovery screen — the user cannot access any other page
+2. The user is redirected to `account-recovery.php`
+3. On every page load, `AuthMiddleware` detects the pending deletion and forces the recovery screen — the user cannot access any other page
 4. The recovery screen shows how many days remain and offers a single "Recover My Account" button
-5. If the user recovers, `deleted_at` is set back to `NULL`
+5. If recovered, `deleted_at` is set back to `NULL` and full access is restored
 6. After 30 days, `UserService::purgeExpiredAccounts()` can be scheduled via cron to permanently remove the record
 
 ---
@@ -216,6 +235,7 @@ Deleting an account does not immediately remove the data. Instead:
 ## Notes
 
 - `groups` is a reserved word in MariaDB/MySQL — all queries wrap it in backticks
-- `LIMIT` in `getRecentExpenses` uses string interpolation (not a bound parameter) because PDO binds integers as strings which MariaDB rejects in `LIMIT` clauses
-- All error details are hidden from the user — handlers redirect with generic error codes only
+- `LIMIT` uses string interpolation instead of a bound parameter because PDO binds integers as strings which MariaDB rejects in `LIMIT` clauses
+- All error details are hidden from users — handlers redirect with generic error codes only, and `db.php` registers a global exception handler that shows `error.php` instead of a stack trace
 - `config/db.php` is not included in the repository
+- `session_start()` is called once per entry point in the handler files — never inside controller methods

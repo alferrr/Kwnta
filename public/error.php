@@ -19,7 +19,7 @@
     <h1 class="recovery-title">Something went wrong</h1>
     <p class="recovery-desc">
         An unexpected error occurred. Please try again later.<br>
-        If the problem persists, contact support.
+        If the problem persists, <a href="mailto:alfzmercado240@gmail.com">contact support.</a>
     </p>
     <div class="recovery-actions">
         <a href="/dashboard.php" class="btn-recovery btn-recovery-primary">
