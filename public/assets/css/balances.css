@@ -206,3 +206,14 @@
     font-size: 0.95rem;
   }
 }
+
+@media screen and (max-width: 480px) {
+  .page-actions {
+    width: 100%;
+    /* border: 1px solid black; */
+  }
+  .balance-search,
+  input {
+    width: 100% !important;
+  }
+}

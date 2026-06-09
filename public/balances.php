@@ -41,7 +41,7 @@ ob_start();
         <p class="page-subtitle">Your net position across all groups</p>
     </div>
     <div class="page-actions">
-        <div style="position:relative;">
+        <div style="position:relative;" class="balance-search">
             <span class="material-symbols-outlined" style="position:absolute; left:9px; top:50%; transform:translateY(-50%); font-size:16px; color:var(--text-muted); pointer-events:none;">search</span>
             <input type="text" id="balance-search" class="form-input" placeholder="Search by name…"
                    style="padding-left:32px; padding-top:7px; padding-bottom:7px; width:180px; font-size:0.82rem;"

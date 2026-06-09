@@ -44,7 +44,7 @@ ob_start();
     <div class="page-actions">
         <form method="GET" action="/expenses.php" style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
             <!-- Search -->
-            <div style="position:relative;">
+            <div style="position:relative;" class="balance-search">
                 <span class="material-symbols-outlined" style="position:absolute; left:9px; top:50%; transform:translateY(-50%); font-size:16px; color:var(--text-muted); pointer-events:none;">search</span>
                 <input type="text" name="search" value="<?= htmlspecialchars($search) ?>"
                        placeholder="Search expenses…" class="form-input"

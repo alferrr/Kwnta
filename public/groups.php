@@ -1,5 +1,4 @@
 <?php
-// public/groups.php
 require_once __DIR__ . '/../src/middleware/AuthMiddleware.php';
 AuthMiddleware::handle();
 
@@ -43,7 +42,7 @@ ob_start();
 
 <div class="page-body">
 
-    <!-- ── Admin: Pending Leave Requests Banner ── -->
+    <!--Admin: Pending Leave Requests Banner-->
     <?php if (!empty($pendingRequests)): ?>
     <div class="leave-requests-banner">
         <div class="leave-requests-banner-left">
