@@ -221,7 +221,7 @@ ob_start();
                         <div class="member-info">
                             <div class="member-name"><?= htmlspecialchars($m['firstname'] . ' ' . $m['lastname']) ?></div>
                             <div class="member-role-badge <?= $m['role'] === 'admin' ? 'member-role-badge--admin' : '' ?>">
-                                <?= $m['role'] === 'admin' ? '⭐ Admin' : 'Member' ?>
+                                <?= $m['role'] === 'admin' ? 'Admin' : 'Member' ?>
                             </div>
                         </div>
                         <?php if ($isYou): ?>
